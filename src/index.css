@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* CloudWatch 스타일 토큰 — 라이트(기본) / 다크(.dark) */
+:root {
+  --cw-bg: #f2f3f3;
+  --cw-surface: #ffffff;
+  --cw-surface-2: #fafbfc;
+  --cw-border: #d5dbdb;
+  --cw-text: #16191f;
+  --cw-text-muted: #5f6b7a;
+  --cw-accent: #0972d3;
+  --cw-accent-hover: #033160;
+  --cw-accent-bg: #e6f1fb;
+
+  --cw-ok: #037f51;
+  --cw-ok-bg: #e5f5ec;
+  --cw-alarm: #d91515;
+  --cw-alarm-bg: #fde8e8;
+  --cw-warning: #b7580b;
+  --cw-warning-bg: #fceee0;
+  --cw-info: #0972d3;
+  --cw-info-bg: #e6f1fb;
+  --cw-neutral: #5f6b7a;
+  --cw-neutral-bg: #eaedf0;
+
+  --cw-scrollbar: #c4cdd5;
+}
+
+.dark {
+  --cw-bg: #0f1b2a;
+  --cw-surface: #16222e;
+  --cw-surface-2: #1b2a3a;
+  --cw-border: #2a3f52;
+  --cw-text: #e9ebed;
+  --cw-text-muted: #8b99a7;
+  --cw-accent: #539fe5;
+  --cw-accent-hover: #89bdee;
+  --cw-accent-bg: rgba(83, 159, 229, 0.12);
+
+  --cw-ok: #2ea043;
+  --cw-ok-bg: rgba(46, 160, 67, 0.15);
+  --cw-alarm: #ff6a69;
+  --cw-alarm-bg: rgba(255, 106, 105, 0.15);
+  --cw-warning: #ffb84d;
+  --cw-warning-bg: rgba(255, 184, 77, 0.15);
+  --cw-info: #539fe5;
+  --cw-info-bg: rgba(83, 159, 229, 0.15);
+  --cw-neutral: #8b99a7;
+  --cw-neutral-bg: rgba(139, 153, 167, 0.15);
+
+  --cw-scrollbar: #2a3f52;
+}
+
+@utility cw-page {
+  background-color: var(--cw-bg);
+  color: var(--cw-text);
+}
+@utility cw-surface {
+  background-color: var(--cw-surface);
+}
+@utility cw-surface-2 {
+  background-color: var(--cw-surface-2);
+}
+@utility cw-border {
+  border-color: var(--cw-border);
+}
+@utility cw-text {
+  color: var(--cw-text);
+}
+@utility cw-muted {
+  color: var(--cw-text-muted);
+}
+@utility cw-accent-text {
+  color: var(--cw-accent);
+}
+@utility cw-accent-bg {
+  background-color: var(--cw-accent);
+}
+@utility cw-accent-bg-soft {
+  background-color: var(--cw-accent-bg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply cw-page antialiased transition-colors duration-150;
+  font-feature-settings: "tnum" 1;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--cw-scrollbar);
+  border-radius: 9999px;
+}

@@ -1,0 +1,40 @@
+server {
+    listen 8080;
+    server_name _;
+
+    # 리버스 프록시/Gateway 뒤에서 내부 포트가 그대로 노출되지 않도록 상대 경로로만 리다이렉트
+    absolute_redirect off;
+
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://${BACKEND_HOST}/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /socket.io/ {
+        proxy_pass http://${BACKEND_HOST}/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # ADR-005(k8s_manager): Gateway가 "/"를 Gitea에 이미 배정해서, 이 GUI는 /dashboard로
+    # 노출된다. Envoy Gateway HTTPRoute가 prefix를 벗기지 않고 그대로 넘기므로(URLRewrite
+    # 필터 없음), 여기서도 /dashboard/ 그대로 받아 파일 시스템 루트로 alias해 서빙한다.
+    location = /dashboard {
+        return 301 /dashboard/;
+    }
+
+    location /dashboard/ {
+        alias /usr/share/nginx/html/;
+        try_files $uri $uri/ /dashboard/index.html;
+    }
+
+    # 컨테이너에 직접 접속(로컬 테스트, 포트포워딩 등)했을 때 편의상 /dashboard/로 안내
+    location = / {
+        return 301 /dashboard/;
+    }
+}
