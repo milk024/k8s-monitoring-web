@@ -15,7 +15,7 @@ LLM 서빙(KServe), RAG 서비스 등이 올라가 있는 실제 운영 클러�
 ![대시보드](docs/screenshots/dashboard.png)
 
 > 이 저장소는 포트폴리오용 공개 사본입니다. 실제 운영 환경의 IP·도메인·조직명은 예시값(`10.0.0.x`, `example.ac.kr`, `myorg`)으로
-> 치환했고, 스크린샷의 해당 정보도 가렸습니다. 스크린샷은 2026-11-03 화면입니다(빌드·배포 상태, Pod 상세, YAML 편집 화면은 그 이후 추가).
+> 치환했고, 스크린샷의 해당 정보와 로그인 사용자 이름도 가렸습니다. 스크린샷은 2026-11-17 운영 화면입니다(알람만 11-03 예시 데이터).
 > 클러스터 전체 구성과 설계 기록은 [k8s-manager](https://github.com/milk024/k8s-manager)에 있습니다.
 
 ## 프로젝트 개요
@@ -53,6 +53,22 @@ LLM 서빙(KServe), RAG 서비스 등이 올라가 있는 실제 운영 클러�
 
 <table>
   <tr>
+    <td><img src="docs/screenshots/builds.png" alt="빌드 상태"></td>
+    <td><img src="docs/screenshots/deploy-status.png" alt="배포 상태"></td>
+  </tr>
+  <tr>
+    <td align="center">빌드 상태 — 앱별 최근 빌드와 펼친 빌드 이력</td>
+    <td align="center">배포 상태 — ArgoCD 동기화와 빌드 대비, 관리 리소스</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/pod-related.png" alt="Pod 연관 리소스"></td>
+    <td><img src="docs/screenshots/namespace-yaml.png" alt="네임스페이스 YAML"></td>
+  </tr>
+  <tr>
+    <td align="center">Pod 상세 — 연관 리소스</td>
+    <td align="center">네임스페이스 YAML — ArgoCD 관리 리소스는 읽기 전용</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/monitoring.png" alt="모니터링 - CPU 차트"></td>
     <td><img src="docs/screenshots/monitoring-gpu.png" alt="모니터링 - GPU 사용률"></td>
   </tr>
@@ -61,20 +77,20 @@ LLM 서빙(KServe), RAG 서비스 등이 올라가 있는 실제 운영 클러�
     <td align="center">GPU별 사용률과 할당된 파드</td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/pod-logs.png" alt="Pod 로그"></td>
     <td><img src="docs/screenshots/gitea.png" alt="Gitea 연동"></td>
-    <td><img src="docs/screenshots/alerts.png" alt="알람"></td>
   </tr>
   <tr>
-    <td align="center">Gitea 저장소와 빌드 이력 (11-03, Gitea Actions 시절)</td>
-    <td align="center">Alertmanager 알람 목록 (예시 데이터)</td>
+    <td align="center">Pod 상세 — 로그 (에러만 보기·직전 컨테이너·검색·받기)</td>
+    <td align="center">Gitea 저장소·웹훅·최근 push</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/pods.png" alt="파드"></td>
-    <td><img src="docs/screenshots/deployments.png" alt="디플로이먼트"></td>
+    <td><img src="docs/screenshots/alerts.png" alt="알람"></td>
   </tr>
   <tr>
     <td align="center">파드 목록</td>
-    <td align="center">디플로이먼트 목록</td>
+    <td align="center">Alertmanager 알람 목록 (예시 데이터)</td>
   </tr>
 </table>
 
