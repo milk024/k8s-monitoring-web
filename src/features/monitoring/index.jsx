@@ -19,6 +19,7 @@ export function MonitoringPage() {
   const podUsageLive = useAppState((s) => s.podUsageLive)
   const gpuUsageLive = useAppState((s) => s.gpuUsageLive)
   const autoRefresh = useAppState((s) => s.autoRefresh)
+  const clusterStatus = useAppState((s) => s.clusterStatus)
 
   const [initialPodUsage, setInitialPodUsage] = useState([])
   const [podUsageLoading, setPodUsageLoading] = useState(true)
@@ -40,12 +41,17 @@ export function MonitoringPage() {
   }, [selectedNamespace])
 
   // GPU는 metric.namespace/pod에 dcgm-exporter 자신의 위치(gpu-operator)가 찍혀서 그걸로는
-  // 워크로드 필터링이 안 된다 — 그래서 항상 클러스터 전체로 조회하고, 실제 워크로드
+  // 워크로드 필터링이 안 된다 — 그래서 항상 클러스터 전체로 받고, 실제 워크로드
   // 네임스페이스(exported_namespace/exported_pod)로 프론트에서 직접 필터링한다.
-  // 백엔드가 아직 GPU를 socket으로 push하지 않아서(gpuUsageLive), 그동안은 이 폴링이
-  // 유일한 갱신 경로다 — 나중에 백엔드가 'monitor:gpu'를 보내기 시작하면 아래 gpus
-  // useMemo가 자동으로 폴링 대신 그 값을 쓰게 된다(연결 끊기면 다시 폴링으로 폴백).
+  // 갱신은 백엔드가 5초마다 보내는 'monitor:gpu' 소켓 이벤트(gpuUsageLive)가 기본이다.
+  // 소켓이 끊겼거나 아직 첫 이벤트가 안 왔을 때만 REST 폴링으로 대신한다.
+  const gpuLive = clusterStatus === 'connected' && gpuUsageLive !== null
+
   useEffect(() => {
+    if (gpuLive) {
+      setGpuLoading(false)
+      return undefined
+    }
     let intervalId
     function loadGpu() {
       fetchGpuUtilization('all').then((data) => {
@@ -53,13 +59,12 @@ export function MonitoringPage() {
         setGpuLoading(false)
       })
     }
-    setGpuLoading(true)
     loadGpu()
     if (autoRefresh) {
       intervalId = setInterval(loadGpu, GPU_POLL_MS)
     }
     return () => clearInterval(intervalId)
-  }, [autoRefresh])
+  }, [autoRefresh, gpuLive])
 
   const podUsage = useMemo(() => {
     if (!podUsageLive) return initialPodUsage
@@ -69,9 +74,9 @@ export function MonitoringPage() {
   }, [podUsageLive, initialPodUsage, selectedNamespace])
 
   const gpus = useMemo(() => {
-    if (!gpuUsageLive) return polledGpus
+    if (!gpuLive) return polledGpus
     return gpuUsageLive.map(transformGpuMetric)
-  }, [gpuUsageLive, polledGpus])
+  }, [gpuLive, gpuUsageLive, polledGpus])
 
   const visibleGpus = useMemo(() => {
     return gpus.filter((g) => {

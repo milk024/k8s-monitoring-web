@@ -9,7 +9,8 @@ const TONE_CLASSES = {
   neutral: 'bg-[var(--cw-neutral-bg)] text-[var(--cw-neutral)]',
 }
 
-export function StatusBadge({ status }) {
+// label 을 주면 상태 값 대신 그 글자를 보여준다 (색은 status 기준)
+export function StatusBadge({ status, label }) {
   const tone = toneForStatus(status)
   return (
     <span
@@ -19,7 +20,7 @@ export function StatusBadge({ status }) {
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {status}
+      {label ?? status}
     </span>
   )
 }

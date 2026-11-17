@@ -126,47 +126,45 @@ export const mockRepos = [
   {
     id: 1,
     name: 'k8s-manager',
-    full_name: 'org/k8s-manager',
-    owner: { login: 'org' },
+    full_name: 'myorg/k8s-manager',
+    owner: { login: 'myorg' },
     private: true,
-    html_url: 'http://gitea.infra.svc.cluster.local:3000/org/k8s-manager',
+    html_url: 'http://gitea.infra.svc.cluster.local:3000/myorg/k8s-manager',
     description: 'Namespace: infra 통합 관리 서버',
     updated_at: agoIso(3 * HOUR),
   },
   {
     id: 2,
     name: 'monitoring-web',
-    full_name: 'org/monitoring-web',
-    owner: { login: 'org' },
+    full_name: 'myorg/monitoring-web',
+    owner: { login: 'myorg' },
     private: true,
-    html_url: 'http://gitea.infra.svc.cluster.local:3000/org/monitoring-web',
+    html_url: 'http://gitea.infra.svc.cluster.local:3000/myorg/monitoring-web',
     description: 'K8s 클러스터 모니터링 대시보드',
     updated_at: agoIso(30 * MIN),
   },
 ]
 
-function actionRun(id, runNumber, sha, title, status, ageMs) {
+function build(n, sha, title, status, ageMs) {
   return {
-    id,
-    name: 'build',
-    head_branch: 'main',
-    head_sha: sha,
-    run_number: runNumber,
-    event: 'push',
-    display_title: title,
+    id: sha,
+    owner: 'myorg',
+    repo: 'monitoring-web',
+    branch: 'main',
+    sha,
+    title,
     status,
-    workflow_id: 'build.yaml',
-    url: `http://gitea.infra.svc.cluster.local:3000/org/monitoring-web/actions/runs/${id}`,
-    created_at: agoIso(ageMs),
-    updated_at: agoIso(ageMs - 30 * 1000),
-    run_started_at: agoIso(ageMs),
+    buildNumber: status === 'none' ? null : n,
+    description: status === 'none' ? null : `Jenkins #${n} ${status === 'success' ? 'SUCCESS' : 'FAILURE'}`,
+    url: status === 'none' ? null : `https://gpu.example.ac.kr/jenkins/job/infra/job/monitoring-web/job/main/${n}/`,
+    updatedAt: agoIso(ageMs),
   }
 }
 
-export const mockActionRuns = [
-  actionRun(5, 5, 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678', 'fix: dashboard 서브패스 nginx 리다이렉트', 'success', 30 * MIN),
-  actionRun(4, 4, 'f0e9d8c7b6a5948372615049382716059483726', 'feat: GPU 모니터링 화면 추가', 'success', 2 * HOUR),
-  actionRun(3, 3, '1234567890abcdef1234567890abcdef12345678', 'ci: 러너 재시작 후 재시도', 'failure', 3 * HOUR),
-  actionRun(2, 2, 'abcdef1234567890abcdef1234567890abcdef12', 'feat: Gitea 연동 화면 추가', 'success', 12 * HOUR),
-  actionRun(1, 1, '0987654321fedcba0987654321fedcba09876543', 'Initial commit', 'success', 1 * DAY),
+export const mockBuilds = [
+  build(5, 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678', 'fix: dashboard 서브패스 nginx 리다이렉트', 'success', 30 * MIN),
+  build(4, 'f0e9d8c7b6a5948372615049382716059483726', 'feat: GPU 모니터링 화면 추가', 'success', 2 * HOUR),
+  build(3, '1234567890abcdef1234567890abcdef12345678', 'docs: README 정리 [skip ci]', 'none', 3 * HOUR),
+  build(3, 'abcdef1234567890abcdef1234567890abcdef12', 'feat: Gitea 연동 화면 추가', 'failure', 12 * HOUR),
+  build(2, '0987654321fedcba0987654321fedcba09876543', 'Initial commit', 'success', 1 * DAY),
 ]

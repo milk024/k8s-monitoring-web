@@ -1,10 +1,11 @@
 import { useAppState } from '../../../core/AppState.ts'
+import { API_BASE_URL } from '../../../config/endpoints.js'
 
 const REFRESH_OPTIONS = [5000, 15000, 30000, 60000]
 
 export function ClusterConnectionForm() {
   const { refreshInterval, setRefreshInterval, autoRefresh, toggleAutoRefresh, clusterStatus } = useAppState()
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
+  const apiBaseUrl = API_BASE_URL
 
   return (
     <div className="max-w-lg space-y-6 cw-surface cw-border rounded-md border p-5">

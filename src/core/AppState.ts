@@ -32,9 +32,9 @@ export const useAppState = create((set) => ({
   k8sPodsLive: null,
   alerts: [],
   giteaPushes: [],
-  // 'gitea:actions'는 웹훅을 받은 서버 인스턴스에 연결된 클라이언트에게만 온다(단일 replica
-  // 전제) — repo/커밋 단위 빌드 결과 알림용으로 최근 것만 몇 개 들고 있는다.
-  giteaActionsEvents: [],
+  // 'ci:build' = Jenkins 빌드 상태 변화 (Gitea status 웹훅 → k8s-manager). 웹훅을 받은 서버 인스턴스에
+  // 연결된 클라이언트에게만 온다(단일 replica 전제) — 최근 것만 몇 개 들고 있는다.
+  ciBuildEvents: [],
 
   setNamespaces: (namespaces) => set({ namespaces }),
   setSelectedNamespace: (selectedNamespace) => set({ selectedNamespace }),
@@ -65,9 +65,9 @@ export const useAppState = create((set) => ({
     set((state) => ({
       giteaPushes: [{ ...push, receivedAt: Date.now() }, ...state.giteaPushes].slice(0, MAX_FEED_ITEMS),
     })),
-  pushGiteaActionsEvent: (event) =>
+  pushCiBuildEvent: (event) =>
     set((state) => ({
-      giteaActionsEvents: [{ ...event, receivedAt: Date.now() }, ...state.giteaActionsEvents].slice(
+      ciBuildEvents: [{ ...event, receivedAt: Date.now() }, ...state.ciBuildEvents].slice(
         0,
         MAX_FEED_ITEMS,
       ),

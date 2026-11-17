@@ -8,6 +8,8 @@ export function transformRepo(repo) {
     fullName: repo.full_name,
     private: repo.private,
     url: repo.html_url,
+    // 기본 브랜치에 Jenkinsfile 이 있는 저장소(서비스). rag 하위 모듈·deploy-* 는 false
+    hasCi: repo.hasCi ?? true,
     updatedAge: formatAge(repo.updated_at),
   }
 }
@@ -20,21 +22,22 @@ export function registerWebhook(owner, repo, webhookUrl) {
   return ApiService.registerWebhook(owner, repo, webhookUrl)
 }
 
-export function transformActionRun(run, repo) {
-  const shortSha = run.head_sha?.slice(0, 7) ?? '-'
+// k8s-manager /builds 응답(또는 'ci:build' 소켓 이벤트) → 표 행
+export function transformBuild(b) {
   return {
-    id: run.id,
-    runNumber: run.run_number,
-    branch: run.head_branch,
-    title: run.display_title,
-    status: run.status,
-    workflow: run.workflow_id,
-    shortSha,
-    imageTag: `registry.example.com/org/${repo}:${run.head_sha}`,
-    age: formatAge(run.updated_at ?? run.run_started_at ?? run.created_at),
+    id: b.sha,
+    sha: b.sha,
+    shortSha: b.sha?.slice(0, 7) ?? '-',
+    title: b.title,
+    branch: b.branch,
+    status: b.status,
+    buildNumber: b.buildNumber,
+    url: b.url,
+    updatedAt: b.updatedAt,
+    age: b.updatedAt ? formatAge(b.updatedAt) : '-',
   }
 }
 
-export function fetchActionRuns(owner, repo, limit) {
-  return ApiService.getActionRuns(owner, repo, limit).then((runs) => runs.map((run) => transformActionRun(run, repo)))
+export function fetchBuilds(owner, repo, limit) {
+  return ApiService.getBuilds(owner, repo, limit).then((builds) => builds.map(transformBuild))
 }

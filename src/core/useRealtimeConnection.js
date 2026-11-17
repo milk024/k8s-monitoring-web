@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { socket } from './socket.js'
 import { useAppState } from './AppState.ts'
+import { useAdminAuth } from '../features/admin/services/adminAuth.js'
 
 export function useRealtimeConnection() {
   const setClusterStatus = useAppState((s) => s.setClusterStatus)
@@ -10,7 +11,26 @@ export function useRealtimeConnection() {
   const setK8sPodsLive = useAppState((s) => s.setK8sPodsLive)
   const pushAlert = useAppState((s) => s.pushAlert)
   const pushGiteaPush = useAppState((s) => s.pushGiteaPush)
-  const pushGiteaActionsEvent = useAppState((s) => s.pushGiteaActionsEvent)
+  const pushCiBuildEvent = useAppState((s) => s.pushCiBuildEvent)
+  const token = useAdminAuth((s) => s.token)
+
+  // 로그인 토큰으로 소켓 연결. 토큰이 바뀌거나 로그아웃하면 끊는다
+  useEffect(() => {
+    if (!token) return undefined
+    function handleConnectError(err) {
+      if (err?.data?.code === 401) {
+        useAdminAuth.getState().logout()
+        toast.error(`실시간 연결 인증 실패: ${err.message}`)
+      }
+    }
+    socket.on('connect_error', handleConnectError)
+    socket.auth = { token }
+    socket.connect()
+    return () => {
+      socket.off('connect_error', handleConnectError)
+      socket.disconnect()
+    }
+  }, [token])
 
   useEffect(() => {
     function handleConnect() {
@@ -23,7 +43,7 @@ export function useRealtimeConnection() {
       setPodUsageLive(payload?.pods ?? [])
       toast.dismiss('monitor-error')
     }
-    // 백엔드 후속 작업 대기 중 — 아직 emit 안 되면 아무 것도 안 오니 gpuUsageLive는 계속 null.
+    // 백엔드 monitorService 가 5초마다 보낸다. 모니터링 페이지는 이 값이 있으면 GPU REST 폴링을 멈춘다.
     function handleMonitorGpu(payload) {
       setGpuUsageLive(payload?.gpus ?? [])
       toast.dismiss('monitor-error')
@@ -50,14 +70,17 @@ export function useRealtimeConnection() {
     function handleK8sPods(payload) {
       setK8sPodsLive(payload?.pods ?? [])
     }
-    function handleGiteaActions(payload) {
-      pushGiteaActionsEvent(payload)
-      const runs = payload?.runs ?? []
-      const label = `${payload?.owner}/${payload?.repo}`
-      if (runs.some((r) => r.status === 'failure')) {
-        toast.error(`${label} 빌드 실패`, { description: payload?.sha?.slice(0, 7) })
-      } else if (runs.length && runs.every((r) => r.status === 'success')) {
-        toast.success(`${label} 빌드 완료`, { description: payload?.sha?.slice(0, 7) })
+    // Jenkins 빌드 결과 (Gitea 커밋 상태 jenkins/build). payload = 빌드 1건
+    function handleCiBuild(build) {
+      pushCiBuildEvent(build)
+      const label = `${build?.repo ?? ''} #${build?.buildNumber ?? '?'}`
+      const description = `${build?.sha?.slice(0, 7) ?? ''} ${build?.title ?? ''}`.trim()
+      if (build?.status === 'failure' || build?.status === 'error') {
+        toast.error(`${label} 빌드 실패`, { description })
+      } else if (build?.status === 'success') {
+        toast.success(`${label} 빌드 완료`, { description })
+      } else if (build?.status === 'pending') {
+        toast.info(`${label} 빌드 시작`, { description })
       }
     }
 
@@ -69,7 +92,7 @@ export function useRealtimeConnection() {
     socket.on('alert:triggered', handleAlertTriggered)
     socket.on('gitea:push', handleGiteaPush)
     socket.on('k8s:pods', handleK8sPods)
-    socket.on('gitea:actions', handleGiteaActions)
+    socket.on('ci:build', handleCiBuild)
 
     if (socket.connected) handleConnect()
 
@@ -82,7 +105,7 @@ export function useRealtimeConnection() {
       socket.off('alert:triggered', handleAlertTriggered)
       socket.off('gitea:push', handleGiteaPush)
       socket.off('k8s:pods', handleK8sPods)
-      socket.off('gitea:actions', handleGiteaActions)
+      socket.off('ci:build', handleCiBuild)
     }
   }, [
     setClusterStatus,
@@ -91,6 +114,6 @@ export function useRealtimeConnection() {
     setK8sPodsLive,
     pushAlert,
     pushGiteaPush,
-    pushGiteaActionsEvent,
+    pushCiBuildEvent,
   ])
 }

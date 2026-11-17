@@ -11,48 +11,30 @@ const K8S_MANAGER_TARGET = process.env.VITE_K8S_API_PROXY || 'http://localhost:8
 // 빌드 인자로 주입) 둘 다 찍는다 — 배포 방식과 무관하게 항상 신뢰 가능한 값.
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 
-// ADR-005(k8s_manager): "/"는 Gitea HTTPRoute가 이미 점유하고 있어, 이 GUI는
-// /dashboard 경로로 양보해 노출한다. Envoy Gateway가 prefix를 벗기지 않고 그대로
-// 넘기므로(k8s_manager/k8s/templates/httproute.yaml), 빌드 산출물도 /dashboard/ 기준으로
-// 자산 경로를 잡아야 한다.
-const BASE_PATH = '/dashboard/'
-
-// vite dev 서버는 base와 무관하게 "/"에서도 그대로 서빙해버려서, 라우터의
-// basename("/dashboard")과 실제 위치가 어긋나 클라이언트 사이드 내비게이션이 깨진다.
-// 운영 환경(nginx.conf.template)과 동일하게 "/" 접근을 /dashboard/로 리다이렉트해 맞춘다.
-function redirectRootToBase() {
-  return {
-    name: 'redirect-root-to-base',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        if (req.url === '/') {
-          res.writeHead(302, { Location: BASE_PATH })
-          res.end()
-          return
-        }
-        next()
-      })
-    },
-  }
-}
+// 2026-11-12: 게이트웨이(gpu.example.ac.kr) 경로 재배치 — 이 GUI는 "/", Gitea 는 /gitea,
+// k8s_manager 는 /api-k8s-m. (이전 ADR-005: Gitea 가 "/" 를 점유해서 /dashboard 로 양보했었음)
+const BASE_PATH = '/'
 
 export default defineConfig({
   base: BASE_PATH,
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  plugins: [react(), tailwindcss(), tsconfigPaths(), redirectRootToBase()],
+  plugins: [react(), tailwindcss(), tsconfigPaths()],
   server: {
     port: 5173,
+    // 운영 nginx.conf.template 과 같은 매핑: /api-k8s-m/socket.io → /socket.io, /api-k8s-m/* → /api/*
     proxy: {
-      '/api': {
-        target: K8S_MANAGER_TARGET,
-        changeOrigin: true,
-      },
-      '/socket.io': {
+      '/api-k8s-m/socket.io': {
         target: K8S_MANAGER_TARGET,
         changeOrigin: true,
         ws: true,
+        rewrite: (p) => p.replace(/^\/api-k8s-m/, ''),
+      },
+      '/api-k8s-m': {
+        target: K8S_MANAGER_TARGET,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api-k8s-m/, '/api'),
       },
     },
   },

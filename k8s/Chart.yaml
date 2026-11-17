@@ -1,7 +1,0 @@
-apiVersion: v2
-name: monitoring-web
-description: >-
-  K8s 클러스터 모니터링 대시보드 (React) — k8s_manager REST API/socket.io 연동
-type: application
-version: 0.1.0
-appVersion: "1.0.0"

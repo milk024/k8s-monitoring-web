@@ -1,5 +1,7 @@
 # 배포 가이드
 
+> 2026-11-12 이후 운영 배포는 Jenkins 빌드 → 배포 저장소(deploy-infra) 이미지 태그 → ArgoCD 동기화로 바뀌었습니다. 아래 Helm 직접 배포 절차는 이전 방식 기록이고, 노드 레지스트리(containerd) 설정과 pull Secret 부분은 지금도 같습니다.
+
 이 대시보드를 Kubernetes 클러스터에 배포할 때 필요한 설정을 정리한 문서입니다.
 주소와 계정 정보는 placeholder(`registry.example.com`, `org`)로 적었으니 환경에 맞게 바꿔서 사용하세요.
 

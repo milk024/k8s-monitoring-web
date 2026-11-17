@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Activity, AlertTriangle, Boxes, GitBranch, LayoutDashboard, Layers, Settings, Box } from 'lucide-react'
+import { Activity, AlertTriangle, Boxes, GitBranch, LayoutDashboard, Layers, Settings, Box, Hammer, Rocket, ShieldCheck } from 'lucide-react'
 import { cn } from '../shared/utils/cn.js'
 import { useAppState } from '../core/AppState.ts'
 
@@ -9,8 +9,13 @@ const NAV_ITEMS = [
   { to: '/deployments', label: '디플로이먼트', icon: Layers },
   { to: '/monitoring', label: '모니터링', icon: Activity },
   { to: '/namespaces', label: '네임스페이스', icon: Boxes },
-  { to: '/gitea', label: 'Gitea', icon: GitBranch },
+  // /gitea 는 게이트웨이에서 Gitea 본체로 가므로 화면 경로는 /repos 를 쓴다
+  { to: '/repos', label: 'Gitea', icon: GitBranch },
+  { to: '/builds', label: '빌드', icon: Hammer },
+  // /argocd 는 게이트웨이에서 ArgoCD 본체로 가므로 화면 경로는 /deploy-status 를 쓴다
+  { to: '/deploy-status', label: '배포 상태', icon: Rocket },
   { to: '/alerts', label: '알람', icon: AlertTriangle },
+  { to: '/admin', label: '관리자', icon: ShieldCheck },
   { to: '/settings', label: '설정', icon: Settings },
 ]
 

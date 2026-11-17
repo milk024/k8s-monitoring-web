@@ -5,36 +5,46 @@ server {
     # 리버스 프록시/Gateway 뒤에서 내부 포트가 그대로 노출되지 않도록 상대 경로로만 리다이렉트
     absolute_redirect off;
 
+    root /usr/share/nginx/html;
     index index.html;
 
-    location /api/ {
-        proxy_pass http://${BACKEND_HOST}/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /socket.io/ {
+    # 2026-11-12 게이트웨이 경로 재배치 (gpu.example.ac.kr):
+    #   /            → 이 GUI
+    #   /gitea/      → Gitea (게이트웨이에서 직접 라우팅, 여기로 오지 않음)
+    #   /api-k8s-m/  → k8s_manager. 백엔드 코드는 /api, /socket.io 그대로라 여기서 경로만 바꿔 넘긴다
+    location /api-k8s-m/socket.io/ {
         proxy_pass http://${BACKEND_HOST}/socket.io/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
+        proxy_read_timeout 1h;
     }
 
-    # ADR-005(k8s_manager): Gateway가 "/"를 Gitea에 이미 배정해서, 이 GUI는 /dashboard로
-    # 노출된다. Envoy Gateway HTTPRoute가 prefix를 벗기지 않고 그대로 넘기므로(URLRewrite
-    # 필터 없음), 여기서도 /dashboard/ 그대로 받아 파일 시스템 루트로 alias해 서빙한다.
-    location = /dashboard {
-        return 301 /dashboard/;
+    location /api-k8s-m/ {
+        proxy_pass http://${BACKEND_HOST}/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }
 
-    location /dashboard/ {
-        alias /usr/share/nginx/html/;
-        try_files $uri $uri/ /dashboard/index.html;
+    # 2026-11-12 C단계: 예전 /api, /socket.io 호환 경로 삭제 (외부 접근은 /api-k8s-m 만)
+    location /api/ { return 404; }
+    location /socket.io/ { return 404; }
+
+    # 이전 /dashboard 북마크 → 같은 화면의 새 경로로
+    location ~ ^/dashboard(/.*)?$ {
+        return 301 $1;
+    }
+    location = /dashboard { return 301 /; }
+
+    # 빌드 해시가 붙은 정적 자산은 길게 캐시, index.html 은 캐시하지 않음
+    location /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
-    # 컨테이너에 직접 접속(로컬 테스트, 포트포워딩 등)했을 때 편의상 /dashboard/로 안내
-    location = / {
-        return 301 /dashboard/;
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
     }
 }

@@ -8,6 +8,11 @@ import { NamespacesPage } from '../features/namespaces/index.jsx'
 import { GiteaPage } from '../features/gitea/index.jsx'
 import { AlertsPage } from '../features/alerts/index.jsx'
 import { SettingsPage } from '../features/settings/index.jsx'
+import { AdminPage } from '../features/admin/index.jsx'
+import { ArgoCdPage } from '../features/argocd/index.jsx'
+import { BuildsPage } from '../features/builds/index.jsx'
+import { PodDetailPage } from '../features/pods/PodDetailPage.jsx'
+import { NamespaceDetailPage } from '../features/namespaces/NamespaceDetailPage.jsx'
 
 export const router = createBrowserRouter(
   [
@@ -17,15 +22,20 @@ export const router = createBrowserRouter(
       children: [
         { index: true, element: <DashboardPage /> },
         { path: 'pods', element: <PodsPage /> },
+        { path: 'pods/:namespace/:name', element: <PodDetailPage /> },
         { path: 'deployments', element: <DeploymentsPage /> },
         { path: 'monitoring', element: <MonitoringPage /> },
         { path: 'namespaces', element: <NamespacesPage /> },
-        { path: 'gitea', element: <GiteaPage /> },
+        { path: 'namespaces/:namespace', element: <NamespaceDetailPage /> },
+        { path: 'builds', element: <BuildsPage /> },
+        { path: 'deploy-status', element: <ArgoCdPage /> },
+        { path: 'repos', element: <GiteaPage /> },
         { path: 'alerts', element: <AlertsPage /> },
         { path: 'settings', element: <SettingsPage /> },
+        { path: 'admin', element: <AdminPage /> },
       ],
     },
   ],
-  // ADR-005(k8s_manager): Gateway가 /dashboard로 이 GUI를 노출 — vite.config.js의 base와 동일하게 맞춘다.
-  { basename: '/dashboard' },
+  // 2026-11-12: 게이트웨이가 이 GUI를 "/" 로 노출 (Gitea 는 /gitea 로 이동). vite.config.js 의 base 와 맞춘다.
+  { basename: '/' },
 )

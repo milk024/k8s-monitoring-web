@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Moon, RefreshCw, Sun } from 'lucide-react'
+import { LogOut, Moon, RefreshCw, Sun } from 'lucide-react'
+import { useAdminAuth } from '../features/admin/services/adminAuth.js'
 import { useAppState } from '../core/AppState.ts'
 import { fetchNamespaces } from '../features/namespaces/services/namespaceService.js'
 import { cn } from '../shared/utils/cn.js'
@@ -17,6 +18,7 @@ export function Topbar() {
     toggleTheme,
   } = useAppState()
   const [refreshTick, setRefreshTick] = useState(0)
+  const { username, expiresAt, logout } = useAdminAuth()
 
   useEffect(() => {
     fetchNamespaces().then(setNamespaces)
@@ -86,6 +88,16 @@ export function Topbar() {
           className="cw-surface cw-border cw-muted flex h-8 w-8 items-center justify-center rounded-md border hover:cw-surface-2"
         >
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+        <span className="cw-muted text-xs" title={expiresAt ? `${new Date(expiresAt).toLocaleString()} 만료` : ''}>
+          {username}
+        </span>
+        <button
+          type="button"
+          onClick={logout}
+          className="cw-surface cw-border cw-text flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:cw-surface-2"
+        >
+          <LogOut size={13} /> 로그아웃
         </button>
       </div>
     </header>

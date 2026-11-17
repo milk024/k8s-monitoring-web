@@ -1,64 +1,32 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppState } from '../../core/AppState.ts'
-import { fetchRepos, fetchActionRuns, registerWebhook, transformActionRun } from './services/giteaService.js'
+import { Link } from 'react-router-dom'
+import { fetchRepos, registerWebhook } from './services/giteaService.js'
 import { RepoTable } from './components/RepoTable.jsx'
 import { RecentPushes } from './components/RecentPushes.jsx'
-import { ActionRunsTable } from './components/ActionRunsTable.jsx'
 
 const DEFAULT_WEBHOOK_URL = 'http://k8s-manager-svc.infra.svc.cluster.local:8000/webhook/gitea'
 
-function mergeRuns(existing, incoming) {
-  const byId = new Map(existing.map((r) => [r.id, r]))
-  incoming.forEach((r) => byId.set(r.id, r))
-  return Array.from(byId.values())
-    .sort((a, b) => b.runNumber - a.runNumber)
-    .slice(0, 10)
-}
-
 export function GiteaPage() {
   const giteaPushes = useAppState((s) => s.giteaPushes)
-  const giteaActionsEvents = useAppState((s) => s.giteaActionsEvents)
   const [repos, setRepos] = useState([])
   const [loading, setLoading] = useState(true)
   const [webhookUrl, setWebhookUrl] = useState(DEFAULT_WEBHOOK_URL)
   const [registeringName, setRegisteringName] = useState(null)
-
-  const [selectedRepo, setSelectedRepo] = useState(null)
-  const [runs, setRuns] = useState([])
-  const [runsLoading, setRunsLoading] = useState(true)
-  const [runsLive, setRunsLive] = useState(false)
+  // 기본은 CI(Jenkins) 저장소만. rag 하위 모듈·deploy-* 는 빌드·웹훅 대상이 아니라 숨긴다
+  const [showAllRepos, setShowAllRepos] = useState(false)
 
   useEffect(() => {
     setLoading(true)
     fetchRepos().then((data) => {
       setRepos(data)
       setLoading(false)
-      if (data.length > 0) setSelectedRepo(data[0])
     })
   }, [])
 
-  useEffect(() => {
-    if (!selectedRepo) return
-    setRunsLoading(true)
-    setRunsLive(false)
-    fetchActionRuns(selectedRepo.owner, selectedRepo.name, 10).then((data) => {
-      setRuns(data)
-      setRunsLoading(false)
-    })
-  }, [selectedRepo])
-
-  // 'gitea:actions'는 웹훅이 온 커밋 하나에 대한 job 결과만 담고 있어서, 기존 목록에
-  // id 기준으로 병합한다(새로 고침 없이 방금 끝난 빌드가 바로 위에 얹힘).
-  useEffect(() => {
-    const latest = giteaActionsEvents[0]
-    if (!latest || !selectedRepo) return
-    if (latest.owner !== selectedRepo.owner || latest.repo !== selectedRepo.name) return
-    const incoming = (latest.runs ?? []).map((run) => transformActionRun(run, selectedRepo.name))
-    setRuns((prev) => mergeRuns(prev, incoming))
-    setRunsLive(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [giteaActionsEvents])
+  const ciRepos = repos.filter((r) => r.hasCi)
+  const visibleRepos = showAllRepos ? repos : ciRepos
 
   function handleRegisterWebhook(repo) {
     setRegisteringName(repo.name)
@@ -72,7 +40,10 @@ export function GiteaPage() {
     <div className="space-y-6">
       <div>
         <h1 className="cw-text text-lg font-semibold">Gitea 연동</h1>
-        <p className="cw-muted text-sm">저장소 목록, push 웹훅, CI/CD 빌드 실행 이력을 확인합니다.</p>
+        <p className="cw-muted text-sm">
+          저장소 목록과 웹훅(push·빌드 상태), 최근 push 를 확인합니다. Jenkins 빌드 결과는{' '}
+          <Link to="/builds" className="text-[var(--cw-accent)] hover:underline">빌드</Link> 화면에서 봅니다.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -84,9 +55,13 @@ export function GiteaPage() {
               className="min-w-0 flex-1 cw-surface cw-border cw-text rounded-md border px-3 py-1.5 text-xs focus:border-[var(--cw-accent)] focus:outline-none"
               placeholder="웹훅 대상 URL (k8s_manager /webhook/gitea)"
             />
+            <label className="cw-muted inline-flex items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={showAllRepos} onChange={(e) => setShowAllRepos(e.target.checked)} />
+              모듈·배포 저장소도 보기 ({repos.length - ciRepos.length})
+            </label>
           </div>
           <RepoTable
-            repos={repos}
+            repos={visibleRepos}
             loading={loading}
             onRegisterWebhook={handleRegisterWebhook}
             registeringName={registeringName}
@@ -97,27 +72,6 @@ export function GiteaPage() {
           <h2 className="mb-2 cw-text text-sm font-semibold">최근 Push (실시간)</h2>
           <RecentPushes pushes={giteaPushes} />
         </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="cw-text text-sm font-semibold">
-            빌드 실행 이력
-            {runsLive && <span className="ml-2 text-xs font-normal text-[var(--cw-ok)]">● 실시간</span>}
-          </h2>
-          <select
-            value={selectedRepo?.fullName ?? ''}
-            onChange={(e) => setSelectedRepo(repos.find((r) => r.fullName === e.target.value) ?? null)}
-            className="cw-surface cw-border cw-text rounded-md border px-3 py-1.5 text-xs focus:border-[var(--cw-accent)] focus:outline-none"
-          >
-            {repos.map((repo) => (
-              <option key={repo.fullName} value={repo.fullName}>
-                {repo.fullName}
-              </option>
-            ))}
-          </select>
-        </div>
-        <ActionRunsTable runs={runs} loading={runsLoading} />
       </div>
     </div>
   )
